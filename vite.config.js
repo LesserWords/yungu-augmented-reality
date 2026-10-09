@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => ({
       input: {
         main: resolve(root, 'index.html'),
         play: resolve(root, 'play.html'),
+        qr: resolve(root, 'tools/qr.html'),
       },
     },
   },

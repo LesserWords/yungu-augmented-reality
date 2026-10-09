@@ -58,7 +58,7 @@ yungu-augmented-reality/
 │  │  └─ yungu-play.glb       joystick mode (Hover, Idle, Wave, Blink)
 │  ├─ img/                    icons, poster, link-preview image
 │  ├─ _headers, .htaccess     MIME types for .usdz / .glb on the server
-├─ tools/qr.html              QR generator (dev only, not deployed): preview, PNG/SVG, scan test
+├─ tools/qr.html              QR generator (deployed at /tools/qr.html): preview, PNG/SVG, scan test
 ├─ scripts/make-qr.mjs        QR generator from the command line
 ├─ qr-code/                   generated QR artwork goes here
 ├─ 3d/
