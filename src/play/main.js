@@ -77,6 +77,9 @@ let mode = 'idle';          // 'idle' (behind start screen) | '3d' | 'ar'
 let placed = false;
 let relocating = false;
 let hitTestSource = null;
+let floorY = 0;             // AR: height he glides to (guess, then detected floor, then tapped spot)
+let floorFound = false;
+let floorTapped = false;
 let controls = null;
 let arSupported = false;
 let statusTimer = 0;
@@ -122,7 +125,6 @@ function start3D() {
   mode = '3d';
   startEl.hidden = true;
   hud.hidden = false;
-  hud.classList.remove('placing');
   previewSet.visible = true;
   yungu.root.position.set(0, 0, 0);
   if (!controls) {
@@ -145,8 +147,10 @@ async function startAR() {
     domOverlay: { root: hud },
   });
   mode = 'ar';
-  placed = false;
+  placed = false; // spawned in front of the phone on the first AR frame
   relocating = false;
+  floorFound = false;
+  floorTapped = false;
   scene.remove(yungu.root);
   previewSet.visible = false;
   scene.background = null;
@@ -157,7 +161,6 @@ async function startAR() {
 
   startEl.hidden = true;
   hud.hidden = false;
-  hud.classList.add('placing');
   setStatus(T.scanFloor);
 
   const viewerSpace = await session.requestReferenceSpace('viewer');
@@ -166,8 +169,31 @@ async function startAR() {
   session.addEventListener('end', onAREnd);
 }
 
+function spawnInFront(frame) {
+  const viewer = frame.getViewerPose(renderer.xr.getReferenceSpace());
+  if (!viewer) return;
+  const m = new THREE.Matrix4().fromArray(viewer.transform.matrix);
+  const camPos = new THREE.Vector3().setFromMatrixPosition(m);
+  const fwd = new THREE.Vector3(0, 0, -1).transformDirection(m);
+  fwd.y = 0;
+  if (fwd.lengthSq() < 1e-6) fwd.set(0, 0, -1);
+  fwd.normalize();
+  floorY = camPos.y - PLAY.arGuessHeight;
+  yungu.root.position.copy(camPos).addScaledVector(fwd, PLAY.arSpawnDistance).setY(floorY);
+  yungu.velocity.set(0, 0, 0);
+  yungu.faceTowards(camPos);
+  scene.add(yungu.root);
+  placed = true;
+}
+
+// a hit counts as floor if the surface faces up
+function isFloorHit(pose) {
+  const { x, z } = pose.transform.orientation;
+  return 1 - 2 * (x * x + z * z) > 0.9; // y component of the surface's up axis
+}
+
 function onARSelect() {
-  if (!(reticle.visible && (!placed || relocating))) return;
+  if (!(reticle.visible && relocating)) return;
   const pos = new THREE.Vector3();
   reticle.matrix.decompose(pos, new THREE.Quaternion(), new THREE.Vector3());
   yungu.root.position.copy(pos);
@@ -175,11 +201,10 @@ function onARSelect() {
   const camPos = new THREE.Vector3();
   renderer.xr.getCamera().getWorldPosition(camPos);
   yungu.faceTowards(camPos);
-  if (!yungu.root.parent) scene.add(yungu.root);
-  placed = true;
+  floorY = pos.y;
+  floorTapped = true; // player chose the surface (e.g. a table): stop auto floor tracking
   relocating = false;
   reticle.visible = false;
-  hud.classList.remove('placing');
   setStatus(T.placed, 3500);
 }
 
@@ -215,9 +240,12 @@ $('btn-bigger').addEventListener('click', () => yungu?.setScale(yungu.scale * PL
 $('btn-smaller').addEventListener('click', () => yungu?.setScale(yungu.scale / PLAY.scaleStep));
 $('btn-relocate').addEventListener('click', () => {
   if (mode === 'ar') {
+    // bring him back in front of the phone and re-detect the floor; a tap on a surface moves him there
+    placed = false;
+    floorFound = false;
+    floorTapped = false;
     relocating = true;
-    hud.classList.add('placing');
-    setStatus(T.relocate);
+    setStatus(T.relocate, 5000);
   } else if (yungu) {
     const delta = new THREE.Vector3().sub(yungu.root.position);
     yungu.root.position.set(0, 0, 0);
@@ -231,15 +259,19 @@ renderer.setAnimationLoop((time, frame) => {
   const dt = timer.getDelta();
 
   if (mode === 'ar' && frame && hitTestSource) {
-    const looking = !placed || relocating;
+    if (!placed) spawnInFront(frame);
+    const looking = relocating || !floorTapped;
     const hits = looking ? frame.getHitTestResults(hitTestSource) : [];
-    if (hits.length) {
-      const pose = hits[0].getPose(renderer.xr.getReferenceSpace());
-      reticle.visible = true;
-      reticle.matrix.fromArray(pose.transform.matrix);
-      if (statusEl.textContent === T.scanFloor) setStatus(T.tapToPlace);
-    } else {
-      reticle.visible = false;
+    const pose = hits.length ? hits[0].getPose(renderer.xr.getReferenceSpace()) : null;
+    reticle.visible = relocating && !!pose;
+    if (reticle.visible) reticle.matrix.fromArray(pose.transform.matrix);
+    if (pose && !floorTapped && isFloorHit(pose)) {
+      // ponytail: first upward surface wins, lower ones replace it (table → floor under it).
+      // A table seen before the floor is used until the floor shows up.
+      const y = pose.transform.position.y;
+      if (!floorFound || y < floorY - 0.1) floorY = y;
+      if (!floorFound && !relocating) setStatus(T.placed, 3500);
+      floorFound = true;
     }
     reticle.material.opacity = 0.65 + 0.3 * Math.sin(time / 180);
   }
@@ -251,6 +283,7 @@ renderer.setAnimationLoop((time, frame) => {
     const cam = mode === 'ar' ? renderer.xr.getCamera() : camera;
     const before = yungu.root.position.clone();
     yungu.update(dt, input, cam, mode === '3d' ? PLAY.previewArenaRadius : 0);
+    if (mode === 'ar') yungu.root.position.y = THREE.MathUtils.damp(yungu.root.position.y, floorY, 3, dt);
 
     if (mode === '3d' && controls) {
       // camera follows Yungu, keeping the orbit the player chose
@@ -264,6 +297,7 @@ renderer.setAnimationLoop((time, frame) => {
       yungu.root.rotation.y = yungu.yaw = Math.sin(time / 2600) * 0.5;
     }
     if (input.magnitude > 0.2 && statusEl.textContent === T.placed) setStatus('');
+    if (input.magnitude > 0.2 && relocating) { relocating = false; setStatus(''); }
   }
 
   renderer.render(scene, camera);

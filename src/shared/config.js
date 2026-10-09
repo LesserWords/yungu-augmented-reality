@@ -29,6 +29,8 @@ export const PLAY = {
   maxLean: 0.22,         // radians of forward lean at full speed
   maxBank: 0.18,         // radians of side tilt while turning
   previewArenaRadius: 3, // metres, desktop/iPhone 3D preview floor
+  arSpawnDistance: 1.2,  // metres in front of the phone where he appears when AR starts
+  arGuessHeight: 1.4,    // assumed phone height above the floor until the real floor is found
   hoverPeriod: 3.0,      // seconds, must match the Hover clip length
 
   // glow pulse: intensity = base * (1 - swing * height), height -1 (low) .. +1 (high)

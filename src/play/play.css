@@ -124,9 +124,6 @@ body.play canvas.scene {
 }
 .joystick.active .joy-knob { transition: none; }
 
-/* placing state: hide controls until Yungu is on the floor */
-.hud.placing .joystick, .hud.placing #btn-wave, .hud.placing .size-group { opacity: 0; pointer-events: none; }
-
 @media (min-width: 900px) {
   .joystick { --size: 168px; }
 }

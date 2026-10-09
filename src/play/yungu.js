@@ -68,10 +68,6 @@ export class Yungu {
     this.floorLight.position.set(0, 0.05, 0);
     this.root.add(this.floorLight);
 
-    // ---- soft contact shadow so he reads as grounded in AR
-    this.shadow = makeShadow();
-    this.root.add(this.shadow);
-
     this.velocity = new THREE.Vector3();
     this.yaw = 0;
     this.targetYaw = 0;
@@ -155,30 +151,5 @@ export class Yungu {
       g.material.emissiveIntensity = g.base * (1 - g.swing * height) * boost;
     }
     this.floorLight.intensity = (0.6 - 0.35 * height) * boost * this.scale * this.scale;
-    const s = 1 - 0.18 * height;
-    this.shadow.scale.set(s, s, s);
-    this.shadow.material.opacity = 0.32 * (1 - 0.3 * height);
   }
-}
-
-function makeShadow() {
-  const size = 128;
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const g = c.getContext('2d');
-  const grd = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  grd.addColorStop(0, 'rgba(0,0,0,0.85)');
-  grd.addColorStop(0.45, 'rgba(0,0,0,0.35)');
-  grd.addColorStop(1, 'rgba(0,0,0,0)');
-  g.fillStyle = grd;
-  g.fillRect(0, 0, size, size);
-  const tex = new THREE.CanvasTexture(c);
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.42, 0.34),
-    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.32 }),
-  );
-  mesh.rotation.x = -Math.PI / 2;
-  mesh.position.y = 0.002;
-  mesh.renderOrder = -1;
-  return mesh;
 }
