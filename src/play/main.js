@@ -11,6 +11,7 @@ import { STRINGS } from '../shared/strings.js';
 import { supportsImmersiveAR } from '../shared/device.js';
 import { Joystick } from './joystick.js';
 import { loadYungu } from './yungu.js';
+import { Capture } from './capture.js';
 
 const T = STRINGS.play;
 const $ = (id) => document.getElementById(id);
@@ -83,6 +84,8 @@ let floorTapped = false;
 let controls = null;
 let arSupported = false;
 let statusTimer = 0;
+const capture = new Capture($('btn-capture'), { onStatus: (t, ms) => setStatus(t, ms) });
+const snapCam = new THREE.PerspectiveCamera();
 
 function setStatus(text, holdMs = 0) {
   statusEl.textContent = text || '';
@@ -143,7 +146,7 @@ function start3D() {
 async function startAR() {
   const session = await navigator.xr.requestSession('immersive-ar', {
     requiredFeatures: ['hit-test'],
-    optionalFeatures: ['dom-overlay', 'light-estimation', 'local-floor'],
+    optionalFeatures: ['dom-overlay', 'light-estimation', 'local-floor', 'camera-access'],
     domOverlay: { root: hud },
   });
   mode = 'ar';
@@ -301,7 +304,28 @@ renderer.setAnimationLoop((time, frame) => {
   }
 
   renderer.render(scene, camera);
+  if (capture.wanted) renderCapture(frame);
 });
+
+// AR frames go to the XR layer, which pages can't read: re-render the same view into the
+// page canvas with the phone camera image as background (needs 'camera-access', else black).
+function renderCapture(frame) {
+  if (mode === 'ar' && frame) {
+    const view = frame.getViewerPose(renderer.xr.getReferenceSpace())?.views[0];
+    const camTex = view?.camera ? renderer.xr.getCameraTexture(view.camera) : null;
+    if (camTex) camTex.colorSpace = THREE.SRGBColorSpace;
+    const xrCam = renderer.xr.getCamera().cameras[0];
+    xrCam.matrixWorld.decompose(snapCam.position, snapCam.quaternion, snapCam.scale);
+    snapCam.projectionMatrix.copy(xrCam.projectionMatrix);
+    snapCam.projectionMatrixInverse.copy(xrCam.projectionMatrixInverse);
+    scene.background = camTex || new THREE.Color(0x000000);
+    renderer.xr.enabled = false;
+    renderer.render(scene, snapCam);
+    renderer.xr.enabled = true;
+    scene.background = null;
+  }
+  capture.frame(renderer.domElement);
+}
 
 function onResize() {
   if (renderer.xr.isPresenting) return;
