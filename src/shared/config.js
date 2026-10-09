@@ -9,6 +9,9 @@ export const MODELS = {
   play: 'models/yungu-play.glb',
 };
 
+// Address the landing page QR opens (desktop visitors scan it to continue on a phone)
+export const SITE_URL = 'https://lesserwords.github.io/yungu-augmented-reality/';
+
 export const BRAND = {
   navy: '#040c18',
   navy2: '#0b1b2e',

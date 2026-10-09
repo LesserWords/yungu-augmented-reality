@@ -106,7 +106,7 @@ The model in `public/models/` is **about 59 cm tall**. Visitors can pinch to res
 - Print it at least **2.5 × 2.5 cm**, roughly 1 cm of QR per 10 cm of scanning distance. Keep the white panel. Test on an iPhone and an Android phone before printing.
 - Adding UTM tags makes the URL longer, which makes the QR denser (version 4 → 8). Use a short URL.
 
-![QR sample](docs/img/qr-card-sample.png)
+![Landing page QR](qr-code/yungu-qr-landing-card.svg)
 
 ---
 

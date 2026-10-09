@@ -1,7 +1,8 @@
 import '@google/model-viewer';
-import QRCode from 'qrcode';
 import './landing.css';
 import { STRINGS } from '../shared/strings.js';
+import { SITE_URL } from '../shared/config.js';
+import { buildArtisticQR } from '../qr/artistic-qr.js';
 import { getPlatform, supportsImmersiveAR } from '../shared/device.js';
 
 const T = STRINGS.landing;
@@ -54,13 +55,8 @@ mv.addEventListener('ar-status', (e) => {
   }
 })();
 
-// ---- desktop: QR of this page so visitors can jump to their phone
+// ---- desktop: QR of the site so visitors can jump to their phone
 function showDesktopQR() {
-  const canvas = document.getElementById('qr-canvas');
-  QRCode.toCanvas(canvas, location.href, {
-    errorCorrectionLevel: 'M',
-    margin: 2,
-    width: 240,
-    color: { dark: '#040c18', light: '#ffffff' },
-  }).then(() => { desktopQR.hidden = false; }).catch(() => {});
+  document.getElementById('qr-box').innerHTML = buildArtisticQR(SITE_URL, { logo: 'img/icon-192.png', frame: false }).svg;
+  desktopQR.hidden = false;
 }
