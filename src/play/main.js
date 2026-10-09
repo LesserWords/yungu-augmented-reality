@@ -319,8 +319,11 @@ function renderCapture(frame) {
     snapCam.projectionMatrix.copy(xrCam.projectionMatrix);
     snapCam.projectionMatrixInverse.copy(xrCam.projectionMatrixInverse);
     scene.background = camTex || new THREE.Color(0x000000);
+    const xrTarget = renderer.getRenderTarget(); // three re-binds the XR layer every frame
     renderer.xr.enabled = false;
+    renderer.setRenderTarget(null);
     renderer.render(scene, snapCam);
+    renderer.setRenderTarget(xrTarget);
     renderer.xr.enabled = true;
     scene.background = null;
   }
