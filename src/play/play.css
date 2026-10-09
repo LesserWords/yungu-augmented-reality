@@ -12,6 +12,9 @@ body.play canvas.scene {
 
 .lime { color: var(--lime); }
 
+/* camera mode: the feed is drawn by WebGL; the <video> only has to stay in the page */
+.cam-feed { position: fixed; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
 /* ---------- start screen ---------- */
 .start {
   position: fixed;

@@ -41,13 +41,13 @@ mv.addEventListener('ar-status', (e) => {
   const xrAR = await supportsImmersiveAR();
   if (platform.iOS) {
     hint.textContent = T.hintIOS;
-    playLabel.textContent = T.play3D;
-    playNote.textContent = T.play3DNote;
+    playLabel.textContent = T.playCam;
+    playNote.textContent = T.playCamNote;
     playNote.hidden = false;
   } else if (platform.android) {
     hint.textContent = xrAR ? T.hintAndroidAR : T.hintAndroidNoXR;
-    playLabel.textContent = xrAR ? T.playAR : T.play3D;
-    if (!xrAR) { playNote.textContent = T.play3DNote; playNote.hidden = false; }
+    playLabel.textContent = xrAR ? T.playAR : T.playCam;
+    if (!xrAR) { playNote.textContent = T.playCamNote; playNote.hidden = false; }
   } else {
     hint.textContent = T.hintDesktop;
     playLabel.textContent = T.play3D;

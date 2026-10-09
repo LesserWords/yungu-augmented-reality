@@ -1,6 +1,7 @@
 // Joystick mode.
 //  - Android Chrome: WebXR AR session -> find the floor, tap to place, drive with the joystick.
-//  - iPhone / desktop / no AR: same controls in a 3D preview scene (also handy for development).
+//  - iPhone / other phones without WebXR: camera feed + gyroscope "fake AR" (camera-mode.js).
+//  - Desktop, or if the camera is refused: same controls in a 3D preview scene (also handy for development).
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -8,10 +9,11 @@ import { XREstimatedLight } from 'three/addons/webxr/XREstimatedLight.js';
 import './play.css';
 import { MODELS, PLAY } from '../shared/config.js';
 import { STRINGS } from '../shared/strings.js';
-import { supportsImmersiveAR } from '../shared/device.js';
+import { supportsImmersiveAR, getPlatform } from '../shared/device.js';
 import { Joystick } from './joystick.js';
 import { loadYungu } from './yungu.js';
 import { Capture } from './capture.js';
+import { requestMotionPermission, startCameraFeed, coverFit, GyroCamera } from './camera-mode.js';
 
 const T = STRINGS.play;
 const $ = (id) => document.getElementById(id);
@@ -74,7 +76,7 @@ const joystick = new Joystick($('joystick'));
 const timer = new THREE.Timer();
 timer.connect(document); // pauses delta while the tab is hidden
 let yungu = null;
-let mode = 'idle';          // 'idle' (behind start screen) | '3d' | 'ar'
+let mode = 'idle';          // 'idle' (behind start screen) | '3d' | 'ar' | 'cam'
 let placed = false;
 let relocating = false;
 let hitTestSource = null;
@@ -83,6 +85,10 @@ let floorFound = false;
 let floorTapped = false;
 let controls = null;
 let arSupported = false;
+let camSupported = false;   // no WebXR, but a phone with a camera: fake AR
+let camFeed = null;
+let gyro = null;
+let camStartedAt = 0;
 let statusTimer = 0;
 const capture = new Capture($('btn-capture'), { onStatus: (t, ms) => setStatus(t, ms) });
 const snapCam = new THREE.PerspectiveCamera();
@@ -96,6 +102,7 @@ function setStatus(text, holdMs = 0) {
 // ------------------------------------------------------------------ boot
 (async function boot() {
   arSupported = await supportsImmersiveAR();
+  camSupported = !arSupported && getPlatform().mobile && !!navigator.mediaDevices?.getUserMedia;
   try {
     yungu = await loadYungu(MODELS.play, (p) => {
       startBtn.textContent = `${T.loading} ${Math.round(p * 100)}%`;
@@ -107,9 +114,9 @@ function setStatus(text, holdMs = 0) {
   }
   scene.add(yungu.root);
   placed = true; // shown in the preview behind the start screen
-  startBtn.textContent = arSupported ? T.startAR : T.start3D;
+  startBtn.textContent = arSupported ? T.startAR : camSupported ? T.startCam : T.start3D;
   startBtn.disabled = false;
-  if (!arSupported) { startNote.textContent = T.arUnsupported; startNote.hidden = false; }
+  if (!arSupported) { startNote.textContent = camSupported ? T.camNote : T.arUnsupported; startNote.hidden = false; }
 })();
 
 startBtn.addEventListener('click', async () => {
@@ -117,6 +124,14 @@ startBtn.addEventListener('click', async () => {
     try { await startAR(); return; } catch (err) {
       console.warn(err);
       startNote.textContent = T.arError;
+      startNote.hidden = false;
+    }
+  }
+  if (camSupported) {
+    const motion = requestMotionPermission(); // must be called inside the tap (iOS)
+    try { await startCam(motion); return; } catch (err) {
+      console.warn(err);
+      startNote.textContent = T.camError;
       startNote.hidden = false;
     }
   }
@@ -140,6 +155,45 @@ function start3D() {
     controls.target.set(0, 0.3, 0);
   }
   setStatus(T.previewHelp, 5000);
+}
+
+// ------------------------------------------------------------------ camera mode (fake AR, no WebXR)
+async function startCam(motionPermission) {
+  camFeed = await startCameraFeed();
+  gyro = (await motionPermission) ? new GyroCamera(camera) : null;
+  mode = 'cam';
+  placed = false; // spawned in front of the phone once the gyroscope reports
+  camStartedAt = performance.now();
+  startEl.hidden = true;
+  hud.hidden = false;
+  previewSet.visible = false;
+  scene.fog = null;
+  scene.background = camFeed.texture;
+  camera.position.set(0, PLAY.arGuessHeight, 0);
+  camFeed.video.addEventListener('resize', fitCamFeed);
+  fitCamFeed();
+  setStatus(T.camHelp, 6000);
+}
+
+// match the 3D camera's field of view to the visible part of the feed
+function fitCamFeed() {
+  const { video, texture } = camFeed;
+  const visible = coverFit(texture, video, camera.aspect);
+  const tanLong = Math.tan(THREE.MathUtils.degToRad(PLAY.camFov) / 2);
+  const tanV = video.videoHeight >= video.videoWidth ? tanLong : tanLong * (video.videoHeight / video.videoWidth);
+  camera.fov = 2 * THREE.MathUtils.radToDeg(Math.atan(tanV * visible));
+  camera.updateProjectionMatrix();
+}
+
+function placeInFrontCam() {
+  const fwd = camera.getWorldDirection(new THREE.Vector3()).setY(0);
+  if (!gyro?.active || fwd.lengthSq() < 1e-6) fwd.set(0, 0, -1);
+  fwd.normalize();
+  yungu.root.position.copy(camera.position).addScaledVector(fwd, PLAY.arSpawnDistance).setY(0);
+  if (!gyro?.active) camera.lookAt(yungu.root.position); // no gyroscope: fixed view looking at him
+  yungu.velocity.set(0, 0, 0);
+  yungu.faceTowards(camera.position);
+  placed = true;
 }
 
 // ------------------------------------------------------------------ AR mode (WebXR)
@@ -249,6 +303,8 @@ $('btn-relocate').addEventListener('click', () => {
     floorTapped = false;
     relocating = true;
     setStatus(T.relocate, 5000);
+  } else if (mode === 'cam') {
+    placed = false; // re-spawned in front of the phone on the next frame
   } else if (yungu) {
     const delta = new THREE.Vector3().sub(yungu.root.position);
     yungu.root.position.set(0, 0, 0);
@@ -279,8 +335,13 @@ renderer.setAnimationLoop((time, frame) => {
     reticle.material.opacity = 0.65 + 0.3 * Math.sin(time / 180);
   }
 
+  if (mode === 'cam') {
+    gyro?.update();
+    if (!placed && (gyro?.active || performance.now() - camStartedAt > 1000)) placeInFrontCam();
+  }
+
   if (yungu && placed) {
-    const driving = mode === '3d' || mode === 'ar';
+    const driving = mode === '3d' || mode === 'ar' || mode === 'cam';
     const input = driving ? joystick.read() : { x: 0, y: 0, magnitude: 0 };
     if (driving && joystick.wavePressed()) yungu.wave();
     const cam = mode === 'ar' ? renderer.xr.getCamera() : camera;
@@ -370,6 +431,7 @@ function onResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  if (mode === 'cam') fitCamFeed();
 }
 window.addEventListener('resize', onResize);
 

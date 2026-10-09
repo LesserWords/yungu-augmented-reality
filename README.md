@@ -5,9 +5,9 @@ Web AR experience for the Yungu mascot. No app to install: one QR code opens a w
 | Mode | iPhone / iPad | Android | Desktop |
 |---|---|---|---|
 | **View in my space** (`index.html`): place Yungu on the floor or a table, hovering | ✅ AR Quick Look | ✅ WebXR / Scene Viewer | 3D viewer + QR to open on a phone |
-| **Joystick mode** (`play.html`): drive Yungu around the room | 3D mode (no AR) | ✅ AR with joystick | 3D mode (joystick, WASD, gamepad) |
+| **Joystick mode** (`play.html`): drive Yungu around the room | Camera mode (feed + gyroscope, no floor tracking) | ✅ AR with joystick | 3D mode (joystick, WASD, gamepad) |
 
-iPhone Safari doesn't allow web pages to run their own AR session, so on iPhone the joystick mode opens in 3D, and "View in my space" uses Apple's built-in AR viewer.
+iPhone Safari doesn't allow web pages to run their own AR session, so on iPhone the joystick mode draws Yungu over the camera feed and turns the view with the gyroscope (`src/play/camera-mode.js`; walking isn't tracked), and "View in my space" uses Apple's built-in AR viewer.
 
 ---
 
