@@ -307,9 +307,33 @@ renderer.setAnimationLoop((time, frame) => {
   if (capture.wanted) renderCapture(frame);
 });
 
-// AR frames go to the XR layer, which pages can't read: re-render the same view into the
-// page canvas with the phone camera image as background (needs 'camera-access', else black).
+// Captures render into an offscreen target and read the pixels back, so they never depend on
+// the page canvas (in AR it isn't composited and comes back empty). In AR the phone camera
+// image is the background (needs 'camera-access', else black).
+// ponytail: no MSAA (three skips the resolve on XR-flagged targets), so captures are a bit aliased
+const capTarget = new THREE.WebGLRenderTarget(1, 1);
+capTarget.isXRRenderTarget = true; // three then applies tone mapping + sRGB encoding, same as on screen
+capTarget.texture.colorSpace = THREE.SRGBColorSpace;
+capTarget.texture.internalFormat = 'RGBA8'; // store the shader's sRGB bytes as-is (SRGB8 would encode twice)
+const capCanvas = document.createElement('canvas');
+const capCtx = capCanvas.getContext('2d');
+const capSize = new THREE.Vector2();
+let capPixels = null;
+
 function renderCapture(frame) {
+  renderer.getDrawingBufferSize(capSize);
+  const k = capture.scale(capSize.x, capSize.y);
+  const w = Math.round((capSize.x * k) / 2) * 2;
+  const h = Math.round((capSize.y * k) / 2) * 2;
+  if (!w || !h) return;
+  if (capCanvas.width !== w || capCanvas.height !== h) {
+    capTarget.setSize(w, h);
+    capCanvas.width = w;
+    capCanvas.height = h;
+    capPixels = new Uint8Array(w * h * 4);
+  }
+
+  let cam = camera;
   if (mode === 'ar' && frame) {
     const view = frame.getViewerPose(renderer.xr.getReferenceSpace())?.views[0];
     const camTex = view?.camera ? renderer.xr.getCameraTexture(view.camera) : null;
@@ -319,15 +343,26 @@ function renderCapture(frame) {
     snapCam.projectionMatrix.copy(xrCam.projectionMatrix);
     snapCam.projectionMatrixInverse.copy(xrCam.projectionMatrixInverse);
     scene.background = camTex || new THREE.Color(0x000000);
-    const xrTarget = renderer.getRenderTarget(); // three re-binds the XR layer every frame
-    renderer.xr.enabled = false;
-    renderer.setRenderTarget(null);
-    renderer.render(scene, snapCam);
-    renderer.setRenderTarget(xrTarget);
-    renderer.xr.enabled = true;
-    scene.background = null;
+    cam = snapCam;
   }
-  capture.frame(renderer.domElement);
+
+  const prevTarget = renderer.getRenderTarget(); // in AR: the XR layer, which three re-binds every frame
+  const xrOn = renderer.xr.enabled;
+  renderer.xr.enabled = false;
+  renderer.setRenderTarget(capTarget);
+  renderer.render(scene, cam);
+  // ponytail: synchronous readback stalls the GPU a bit; readRenderTargetPixelsAsync if video stutters
+  renderer.readRenderTargetPixels(capTarget, 0, 0, w, h, capPixels);
+  renderer.setRenderTarget(prevTarget);
+  renderer.xr.enabled = xrOn;
+  if (mode === 'ar') scene.background = null;
+
+  // GL rows are bottom-up: flip while copying into the 2D canvas
+  const img = capCtx.createImageData(w, h);
+  const row = w * 4;
+  for (let y = 0; y < h; y++) img.data.set(capPixels.subarray((h - 1 - y) * row, (h - y) * row), y * row);
+  capCtx.putImageData(img, 0, 0);
+  capture.frame(capCanvas);
 }
 
 function onResize() {

@@ -32,11 +32,14 @@ export class Capture {
 
   get wanted() { return this.photoPending || !!this.recorder; }
 
-  // call right after rendering `source` (same task, so the WebGL buffer is still intact)
+  // resolution factor for the next frame: full size for photos, videos capped at 1280px on the long side
+  scale(w, h) {
+    return this.photoPending ? 1 : Math.min(1, 1280 / Math.max(w, h));
+  }
+
   frame(source) {
     if (!source.width || !source.height) return;
     if (this.recorder) {
-      // ponytail: videos capped at 1280px on the long side to keep encoding cheap on phones
       const k = Math.min(1, 1280 / Math.max(source.width, source.height));
       this.#draw(source, Math.round(source.width * k / 2) * 2, Math.round(source.height * k / 2) * 2);
     }
