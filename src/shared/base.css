@@ -1,0 +1,64 @@
+:root {
+  --navy: #040c18;
+  --navy-2: #0b1b2e;
+  --navy-3: #13293f;
+  --lime: #bff040;
+  --lime-deep: #5fb000;
+  --white: #ffffff;
+  --text: #e8eef5;
+  --muted: #9fb0c2;
+  --radius: 18px;
+  --font: 'Poppins', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 24px;
+  border-radius: 999px;
+  border: 0;
+  font: 600 16px/1 var(--font);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  user-select: none;
+}
+.btn:active { transform: scale(.97); }
+.btn:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
+.btn[disabled], .btn.is-disabled { opacity: .45; pointer-events: none; }
+
+.btn-primary {
+  background: var(--lime);
+  color: var(--navy);
+  box-shadow: 0 0 0 1px rgba(191, 240, 64, .4), 0 8px 30px rgba(191, 240, 64, .28);
+}
+.btn-primary:hover { box-shadow: 0 0 0 1px rgba(191, 240, 64, .6), 0 10px 40px rgba(191, 240, 64, .45); }
+
+.btn-ghost {
+  background: rgba(255, 255, 255, .06);
+  color: var(--white);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .22);
+}
+.btn-ghost:hover { background: rgba(255, 255, 255, .1); }
+
+.btn svg { width: 22px; height: 22px; flex: none; }
+
+[hidden] { display: none !important; }

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gerador de QR · Yungu AR</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="../img/icon-32.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <main class="qr-tool">
+    <section class="controls">
+      <p class="eyebrow">Ferramenta interna · não vai para o site publicado</p>
+      <h1>QR code do <span class="lime">Yungu</span></h1>
+
+      <label class="field">
+        <span>Endereço do site (URL final)</span>
+        <input id="url" type="url" placeholder="https://seudominio.com/yungu" autocomplete="off" />
+      </label>
+      <label class="check">
+        <input id="utm" type="checkbox" />
+        <span>Adicionar rastreamento UTM (separa os acessos via QR no Analytics)</span>
+      </label>
+      <label class="field">
+        <span>Frase principal</span>
+        <input id="caption" type="text" value="Escaneie e veja o Yungu" maxlength="34" />
+      </label>
+      <label class="field">
+        <span>Frase em verde</span>
+        <input id="sub" type="text" value="no seu espaço" maxlength="34" />
+      </label>
+      <div class="seg" role="radiogroup" aria-label="Estilo">
+        <label><input type="radio" name="style" value="card" checked /> <span>Cartão</span></label>
+        <label><input type="radio" name="style" value="plain" /> <span>Só o QR</span></label>
+      </div>
+      <label class="field">
+        <span>Largura do PNG (px)</span>
+        <select id="png-size">
+          <option value="1200">1200 px (redes / tela)</option>
+          <option value="2400" selected>2400 px (impressão até ~20 cm)</option>
+          <option value="4800">4800 px (banner / pôster)</option>
+        </select>
+      </label>
+
+      <div class="downloads">
+        <button id="dl-svg" class="btn btn-primary" type="button" disabled>Baixar SVG (gráfica)</button>
+        <button id="dl-png" class="btn btn-ghost" type="button" disabled>Baixar PNG</button>
+      </div>
+      <ul class="rules">
+        <li>Tamanho mínimo impresso: <strong>2,5 × 2,5 cm</strong> (só o QR).</li>
+        <li>Distância de leitura ≈ 10× a largura do QR.</li>
+        <li>Não mude as cores dos quadrados nem coloque o QR sobre fundo escuro sem o cartão.</li>
+        <li>Teste com iPhone e Android antes de imprimir.</li>
+      </ul>
+    </section>
+
+    <section class="preview">
+      <div id="qr-preview" class="qr-preview" aria-live="polite"></div>
+      <p id="verify" class="verify">Digite o endereço para gerar o QR.</p>
+      <p id="meta" class="meta"></p>
+    </section>
+  </main>
+  <script type="module" src="./qr-tool.js"></script>
+</body>
+</html>

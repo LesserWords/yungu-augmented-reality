@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Yungu em Realidade Aumentada</title>
+  <meta name="description" content="Veja o Yungu flutuando no seu espaço, direto do navegador. Sem instalar nada." />
+  <meta name="theme-color" content="#040c18" />
+  <link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png" />
+  <link rel="apple-touch-icon" href="img/icon-180.png" />
+
+  <!-- Link preview (WhatsApp, Instagram, LinkedIn). Replace with the absolute URL after deploy. -->
+  <meta property="og:title" content="Yungu no seu espaço" />
+  <meta property="og:description" content="Realidade aumentada direto do navegador. Sem app." />
+  <meta property="og:image" content="img/og-image.jpg" />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preload" href="models/yungu.glb" as="fetch" type="model/gltf-binary" crossorigin />
+</head>
+<body>
+  <main class="stage">
+    <header class="brand">
+      <img src="img/icon-192.png" alt="" width="36" height="36" />
+      <span>Yungu <em>AR</em></span>
+    </header>
+
+    <section class="viewer-wrap" aria-label="Yungu em 3D">
+      <model-viewer
+        id="yungu"
+        src="models/yungu.glb"
+        ios-src="models/yungu.usdz"
+        poster="img/yungu-poster.webp"
+        alt="Yungu, o robô mascote branco com antena verde, flutuando"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        ar-scale="auto"
+        ar-placement="floor"
+        autoplay
+        animation-name="Hover"
+        camera-controls
+        disable-zoom
+        disable-pan
+        touch-action="pan-y"
+        interaction-prompt="none"
+        camera-orbit="12deg 80deg auto"
+        field-of-view="28deg"
+        shadow-intensity="0"
+        environment-image="neutral"
+        tone-mapping="neutral"
+        exposure="1.05">
+        <!-- hide model-viewer's default AR button; the page uses its own -->
+        <div slot="ar-button" hidden></div>
+        <div slot="progress-bar" class="mv-progress"><div class="mv-progress-bar"></div></div>
+      </model-viewer>
+    </section>
+
+    <section class="panel">
+      <p class="eyebrow">Realidade aumentada · sem app</p>
+      <h1>Oi, eu sou o <span class="lime">Yungu</span>!</h1>
+      <p class="lead">Me coloque no seu espaço direto do navegador e veja como eu flutuo por aí.</p>
+
+      <div class="actions">
+        <button id="btn-ar" class="btn btn-primary" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5"/><path d="M12 12v10"/></svg>
+          Ver no meu espaço
+        </button>
+        <a id="btn-play" class="btn btn-ghost" href="play.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/></svg>
+          <span id="btn-play-label">Jogar com joystick</span>
+        </a>
+      </div>
+
+      <p id="hint" class="hint" aria-live="polite"></p>
+      <p id="play-note" class="note" hidden></p>
+
+      <div id="desktop-qr" class="desktop-qr" hidden>
+        <canvas id="qr-canvas" width="180" height="180" aria-label="QR code desta página"></canvas>
+        <p>Escaneie com a câmera do celular para abrir esta página.</p>
+      </div>
+    </section>
+
+    <footer class="foot">Yungu · Kero</footer>
+  </main>
+
+  <script type="module" src="/src/landing/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# Netlify / Cloudflare Pages: correct MIME types for the 3D files (needed by iPhone AR Quick Look)
+/models/*.usdz
+  Content-Type: model/vnd.usdz+zip
+  Cache-Control: public, max-age=86400
+/models/*.glb
+  Content-Type: model/gltf-binary
+  Cache-Control: public, max-age=86400

@@ -1,0 +1,8 @@
+# Apache / cPanel / WordPress hosting: correct MIME types for the 3D files
+AddType model/vnd.usdz+zip .usdz
+AddType model/gltf-binary .glb
+<IfModule mod_headers.c>
+  <FilesMatch "\.(usdz|glb)$">
+    Header set Cache-Control "public, max-age=86400"
+  </FilesMatch>
+</IfModule>

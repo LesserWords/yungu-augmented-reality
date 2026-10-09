@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "headers": [
+    { "source": "/models/(.*)\\.usdz", "headers": [{ "key": "Content-Type", "value": "model/vnd.usdz+zip" }] },
+    { "source": "/models/(.*)\\.glb", "headers": [{ "key": "Content-Type", "value": "model/gltf-binary" }] }
+  ]
+}
