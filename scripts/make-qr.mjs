@@ -1,6 +1,7 @@
 // Generate the artistic QR as SVG files from the command line.
 //   npm run qr -- https://your-domain.com/yungu
 //   npm run qr -- https://your-domain.com/yungu --utm --caption "Escaneie e veja o Yungu" --sub "no seu espaço"
+//   npm run qr -- https://your-domain.com/yungu/play.html --name play   -> qr-code/yungu-qr-play-*.svg
 // For a PNG (and an automatic scan test) use the browser tool: npm run dev -> /tools/qr.html
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -16,7 +17,7 @@ const opt = (name, fallback) => {
 
 let url = args.find((a) => /^https?:\/\//i.test(a));
 if (!url) {
-  console.error('Usage: npm run qr -- https://your-domain.com/yungu [--utm] [--caption "..."] [--sub "..."]');
+  console.error('Usage: npm run qr -- https://your-domain.com/yungu [--utm] [--caption "..."] [--sub "..."] [--name play]');
   process.exit(1);
 }
 if (flag('utm')) url = withUTM(url);
@@ -30,10 +31,11 @@ if (opt('caption')) captions.caption = opt('caption');
 if (opt('sub')) captions.subcaption = opt('sub');
 const card = buildArtisticQR(url, { logo, ...captions });
 const plain = buildArtisticQR(url, { logo, frame: false });
-writeFileSync(resolve(outDir, 'yungu-qr-card.svg'), card.svg);
-writeFileSync(resolve(outDir, 'yungu-qr-plain.svg'), plain.svg);
-writeFileSync(resolve(outDir, 'qr-url.txt'), url + '\n');
+const base = opt('name') ? `yungu-qr-${opt('name')}` : 'yungu-qr';
+writeFileSync(resolve(outDir, `${base}-card.svg`), card.svg);
+writeFileSync(resolve(outDir, `${base}-plain.svg`), plain.svg);
+writeFileSync(resolve(outDir, `${base}-url.txt`), url + '\n');
 
 console.log(`QR for: ${url}`);
 console.log(`QR version ${card.version} (${card.modules}x${card.modules} modules), error correction H`);
-console.log(`Saved: qr-code/yungu-qr-card.svg, qr-code/yungu-qr-plain.svg`);
+console.log(`Saved: qr-code/${base}-card.svg, qr-code/${base}-plain.svg`);
